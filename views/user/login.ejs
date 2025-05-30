@@ -472,17 +472,11 @@
         <span>or continue with</span>
       </div>
 
-      <div class="social-login">
+      <!-- <div class="social-login">
         <button class="social-button" onclick="socialLogin('google')">
           🔍
         </button>
-        <button class="social-button" onclick="socialLogin('facebook')">
-          📘
-        </button>
-        <button class="social-button" onclick="socialLogin('twitter')">
-          🐦
-        </button>
-      </div>
+      </div> -->
 
       <div class="signup-link">
         Don't have an account?
@@ -627,6 +621,10 @@
           '💡 Demo tip: Use any email format and password with 6+ characters to test the login flow!'
         );
       }, 3000);
+
+      function showSignup(){
+    window.location.href = "/signup";
+    }
     </script>
   </body>
 </html>

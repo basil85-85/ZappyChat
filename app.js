@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import nocache from 'nocache';
 import userRoute from './Route/userRouter.js';
+import db from "./config/db.js"
 import { fileURLToPath } from 'url';
 // import adminRoute from './Route/adminRouter.js';
 const app = express();
@@ -21,6 +22,9 @@ app.set('views', [
 app.use('/', userRoute);
 // app.use('/admin', adminRoute);
 
+
+
+db()
 app.listen(5000, () => {
   console.log(`http://localhost:5000`);
 });
