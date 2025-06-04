@@ -17,6 +17,7 @@ route.post("/signup",registerController.register)
 
 //otp verification 
 route.get("/otp-verification",otpVerfication.getOtp)
+route.post("/save-user",otpVerfication.otpVerify)
 
 
 export default route 

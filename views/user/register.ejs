@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ZappyChat - Create Account</title>
     <link rel="icon" type="image/png" href="favicon.png" />
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<!-- Firebase Authentication -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <style>
       * {
         margin: 0;
@@ -564,11 +567,11 @@
                 <div class="error-message" id="usernameError"></div>
             </div>
 
-            <div class="form-group">
+            <!-- <div class="form-group">
                 <label class="form-label" for="phone">Phone Number</label>
                 <input type="tel" id="phone" class="form-input" placeholder="+91 98765 43210" required>
                 <div class="error-message" id="phoneError"></div>
-            </div>
+            </div> -->
 
             <div class="form-group">
                 <label class="form-label" for="password">Password</label>
@@ -643,327 +646,196 @@
       </div>
     </div>
 <script>
-  class SignupFormValidator {
-            constructor() {
-                this.form = document.getElementById('signupForm');
-                this.fields = {
-                    firstName: document.getElementById('firstName'),
-                    lastName: document.getElementById('lastName'),
-                    username: document.getElementById('username'),
-                    phone: document.getElementById('phone'),
-                    password: document.getElementById('password'),
-                    confirmPassword: document.getElementById('confirmPassword')
-                };
-                this.errorElements = {
-                    firstName: document.getElementById('firstNameError'),
-                    lastName: document.getElementById('lastNameError'),
-                    username: document.getElementById('usernameError'),
-                    phone: document.getElementById('phoneError'),
-                    password: document.getElementById('passwordError'),
-                    confirmPassword: document.getElementById('confirmPasswordError')
-                };
-                this.submitButton = document.getElementById('signupButton');
-                this.spinner = document.getElementById('spinner');
-                this.buttonText = document.getElementById('buttonText');
-                this.successMessage = document.getElementById('successMessage');
-                this.globalErrorMessage = document.getElementById('globalErrorMessage');
+const form = document.getElementById("signupForm");
+const signupButton = document.getElementById("signupButton");
+const passwordInput = document.getElementById("password");
+const confirmPasswordInput = document.getElementById("confirmPassword");
 
-                this.initEventListeners();
-            }
+const hints = {
+  lengthHint: password => password.length >= 8,
+  uppercaseHint: password => /[A-Z]/.test(password),
+  numberHint: password => /\d/.test(password),
+  specialHint: password => /[^A-Za-z0-9]/.test(password)
+};
 
-            initEventListeners() {
-                // Real-time validation
-                Object.keys(this.fields).forEach(key => {
-                    this.fields[key].addEventListener('input', () => this.validateField(key));
-                    this.fields[key].addEventListener('blur', () => this.validateField(key));
-                });
+function validatePasswordHints(password) {
+  let allValid = true;
+  Object.entries(hints).forEach(([id, validateFn]) => {
+    const hint = document.getElementById(id);
+    if (validateFn(password)) {
+      hint.classList.remove("invalid");
+      hint.classList.add("valid");
+    } else {
+      hint.classList.add("invalid");
+      hint.classList.remove("valid");
+      allValid = false;
+    }
+  });
+  return allValid;
+}
 
-                // Password strength checker
-                this.fields.password.addEventListener('input', () => this.checkPasswordStrength());
+function validateForm() {
+  const firstName = form.firstName.value.trim();
+  const lastName = form.lastName.value.trim();
+  const username = form.username.value.trim();
+  const password = form.password.value;
+  const confirmPassword = form.confirmPassword.value;
 
-                // Password toggle buttons
-                document.getElementById('passwordToggle').addEventListener('click', () => 
-                    this.togglePasswordVisibility('password'));
-                document.getElementById('confirmPasswordToggle').addEventListener('click', () => 
-                    this.togglePasswordVisibility('confirmPassword'));
+  let isValid = true;
+  if (!firstName) {
+    document.getElementById("firstNameError").innerText = "First name required";
+    isValid = false;
+  }
+  if (!lastName) {
+    document.getElementById("lastNameError").innerText = "Last name required";
+    isValid = false;
+  }
+  if (!username) {
+    document.getElementById("usernameError").innerText = "Username required";
+    isValid = false;
+  }
+  if (!validatePasswordHints(password)) {
+    document.getElementById("passwordError").innerText = "Weak password";
+    isValid = false;
+  }
+  if (password !== confirmPassword) {
+    document.getElementById("confirmPasswordError").innerText = "Passwords do not match";
+    isValid = false;
+  }
+  return isValid;
+}
 
-                // Form submission
-                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+form.addEventListener("input", () => {
+  const password = passwordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
+  const strong = validatePasswordHints(password) && password === confirmPassword;
+  signupButton.disabled = !strong;
+});
 
-                // Initial validation check
-                this.validateForm();
-            }
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-            validateField(fieldName) {
-                const field = this.fields[fieldName];
-                const value = field.value.trim();
-                let isValid = true;
-                let errorMessage = '';
+  // Clear old errors
+  document.querySelectorAll(".error-message").forEach(el => el.innerText = "");
 
-                switch (fieldName) {
-                    case 'firstName':
-                    case 'lastName':
-                        if (!value) {
-                            isValid = false;
-                            errorMessage = `${fieldName === 'firstName' ? 'First' : 'Last'} name is required`;
-                        } else if (value.length < 2) {
-                            isValid = false;
-                            errorMessage = `${fieldName === 'firstName' ? 'First' : 'Last'} name must be at least 2 characters`;
-                        } else if (!/^[a-zA-Z\s]+$/.test(value)) {
-                            isValid = false;
-                            errorMessage = 'Only letters and spaces are allowed';
-                        }
-                        break;
+  if (!validateForm()) return;
 
-                    case 'username':
-                        if (!value) {
-                            isValid = false;
-                            errorMessage = 'Username is required';
-                        } else if (value.length < 3) {
-                            isValid = false;
-                            errorMessage = 'Username must be at least 3 characters';
-                        } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-                            isValid = false;
-                            errorMessage = 'Username can only contain letters, numbers, and underscores';
-                        }
-                        break;
+  const data = {
+    firstName: form.firstName.value.trim(),
+    lastName: form.lastName.value.trim(),
+    username: form.username.value.trim(),
+    password: form.password.value
+  };
 
-                    case 'phone':
-                        if (!value) {
-                            isValid = false;
-                            errorMessage = 'Phone number is required';
-                        } else if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(value.replace(/\s/g, ''))) {
-                            isValid = false;
-                            errorMessage = 'Please enter a valid Indian phone number';
-                        }
-                        break;
+  try {
+    signupButton.disabled = true;
+    document.getElementById("buttonText").innerText = "Creating...";
+    const res = await fetch("/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
 
-                    case 'password':
-                        const passwordValidation = this.validatePassword(value);
-                        isValid = passwordValidation.isValid;
-                        errorMessage = passwordValidation.message;
-                        break;
+    if (res.ok) {
+     
+      if(result.success){
+         showSuccessNotification(result.message)
+         setTimeout(()=>{
+        window.location.href = "/otp-verification"
+      },1500)
+      }else{
+       showErrorNotification(result.message)
+      }
+    } else {
+      showErrorNotification(result.message)
+    }
+  } catch (err) {
+    showErrorNotification(result.message)
+  } finally {
+    signupButton.disabled = false;
+    document.getElementById("buttonText").innerText = "Create Your Account";
+  }
+});
 
-                    case 'confirmPassword':
-                        if (!value) {
-                            isValid = false;
-                            errorMessage = 'Please confirm your password';
-                        } else if (value !== this.fields.password.value) {
-                            isValid = false;
-                            errorMessage = 'Passwords do not match';
-                        }
-                        break;
-                }
 
-                this.showFieldError(fieldName, isValid, errorMessage);
-                return isValid;
-            }
 
-            validatePassword(password) {
-                const checks = {
-                    length: password.length >= 8,
-                    uppercase: /[A-Z]/.test(password),
-                    number: /\d/.test(password),
-                    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-                };
+function showLogin(){
+  window.location.href = "/"
+}
 
-                // Update hint indicators
-                document.getElementById('lengthHint').className = `hint ${checks.length ? 'valid' : 'invalid'}`;
-                document.getElementById('uppercaseHint').className = `hint ${checks.uppercase ? 'valid' : 'invalid'}`;
-                document.getElementById('numberHint').className = `hint ${checks.number ? 'valid' : 'invalid'}`;
-                document.getElementById('specialHint').className = `hint ${checks.special ? 'valid' : 'invalid'}`;
 
-                const isValid = Object.values(checks).every(check => check);
-                
-                return {
-                    isValid,
-                    message: isValid ? '' : 'Password does not meet requirements'
-                };
-            }
 
-            checkPasswordStrength() {
-                const password = this.fields.password.value;
-                const strengthBar = document.getElementById('strengthBar');
-                
-                if (password.length === 0) {
-                    strengthBar.className = 'password-strength-bar';
-                    return;
-                }
+function showErrorNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #dc3545;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <span class="error-icon">⚠️</span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
 
-                const checks = {
-                    length: password.length >= 8,
-                    uppercase: /[A-Z]/.test(password),
-                    lowercase: /[a-z]/.test(password),
-                    number: /\d/.test(password),
-                    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-                };
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+function showSuccessNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <span class="success-checkmark">✓</span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
 
-                const score = Object.values(checks).filter(Boolean).length;
-
-                if (score <= 2) {
-                    strengthBar.className = 'password-strength-bar weak';
-                } else if (score <= 4) {
-                    strengthBar.className = 'password-strength-bar medium';
-                } else {
-                    strengthBar.className = 'password-strength-bar strong';
-                }
-            }
-
-            showFieldError(fieldName, isValid, message) {
-                const field = this.fields[fieldName];
-                const errorElement = this.errorElements[fieldName];
-
-                if (isValid) {
-                    field.classList.remove('error');
-                    field.classList.add('success');
-                    errorElement.textContent = '';
-                    errorElement.classList.remove('show');
-                } else {
-                    field.classList.remove('success');
-                    field.classList.add('error');
-                    errorElement.textContent = message;
-                    errorElement.classList.add('show');
-                }
-
-                this.validateForm();
-            }
-
-            validateForm() {
-                const allValid = Object.keys(this.fields).every(key => {
-                    const field = this.fields[key];
-                    return field.value.trim() !== '' && !field.classList.contains('error');
-                });
-
-                this.submitButton.disabled = !allValid;
-            }
-
-            togglePasswordVisibility(fieldName) {
-                const field = this.fields[fieldName];
-                const isPassword = field.type === 'password';
-                field.type = isPassword ? 'text' : 'password';
-                
-                const toggleButton = document.getElementById(fieldName + 'Toggle');
-                toggleButton.textContent = isPassword ? '🙈' : '👁️';
-            }
-
-            async handleSubmit(e) {
-                e.preventDefault();
-
-                // Final validation
-                let isFormValid = true;
-                Object.keys(this.fields).forEach(key => {
-                    if (!this.validateField(key)) {
-                        isFormValid = false;
-                    }
-                });
-
-                if (!isFormValid) {
-                    this.showGlobalError('Please fix all errors before submitting');
-                    return;
-                }
-
-                // Show loading state
-                this.setLoadingState(true);
-
-                try {
-                    const formData = this.getFormData();
-                    const response = await this.submitToBackend(formData);
-                    
-                    if (response.success) {
-                        this.showSuccess(response.message || 'Account created successfully!');
-                        this.form.reset();
-                        this.resetFormState()
-                        setTimeout(()=>{
-                          window.location.href ="/otp-verification"
-                        },1000)
-                    } else {
-                        this.showGlobalError(response.message || 'An error occurred. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    this.showGlobalError('Network error. Please check your connection and try again or try another username and phonenumber.');
-                } finally {
-                    this.setLoadingState(false);
-                }
-            }
-
-            getFormData() {
-                return {
-                    firstName: this.fields.firstName.value.trim(),
-                    lastName: this.fields.lastName.value.trim(),
-                    username: this.fields.username.value.trim(),
-                    phone: this.fields.phone.value.trim(),
-                    password: this.fields.password.value
-                };
-            }
-
-            async submitToBackend(formData) {
-                // Replace with your actual backend endpoint
-                const API_ENDPOINT = '/signup'; // Change this to your backend URL
-                
-                const response = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    // Handle HTTP errors
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                }
-
-                return await response.json();
-            }
-
-            setLoadingState(isLoading) {
-                this.submitButton.disabled = isLoading;
-                this.spinner.classList.toggle('show', isLoading);
-                this.buttonText.textContent = isLoading ? 'Creating Account...' : 'Create Your Account';
-            }
-
-            showSuccess(message) {
-                this.successMessage.textContent = message;
-                this.successMessage.classList.add('show');
-                this.globalErrorMessage.classList.remove('show');
-                
-                setTimeout(() => {
-                    this.successMessage.classList.remove('show');
-                }, 5000);
-            }
-
-            showGlobalError(message) {
-                this.globalErrorMessage.textContent = message;
-                this.globalErrorMessage.classList.add('show');
-                this.successMessage.classList.remove('show');
-                
-                setTimeout(() => {
-                    this.globalErrorMessage.classList.remove('show');
-                }, 5000);
-            }
-
-            resetFormState() {
-                Object.keys(this.fields).forEach(key => {
-                    const field = this.fields[key];
-                    field.classList.remove('success', 'error');
-                    this.errorElements[key].classList.remove('show');
-                });
-                
-                document.getElementById('strengthBar').className = 'password-strength-bar';
-                document.querySelectorAll('.hint').forEach(hint => {
-                    hint.className = 'hint invalid';
-                });
-                
-                this.validateForm();
-            }
-        }
-
-        // Initialize the form validator when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new SignupFormValidator();
-        });
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
     </script>
 
   </body>

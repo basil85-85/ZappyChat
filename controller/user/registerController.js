@@ -11,32 +11,38 @@ const getRegister = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    console.log(req.body)
-    const { firstName, lastName, username, phone, password } = req.body;
+    const { firstName, lastName, username, password, phone } = req.body;
+    console.log(req.body);
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Username already exists' });
+      return res.status(409).json({ success: false, message: 'Username already exists' });
     }
+
+    const existingPhoneNumber = phone && await User.findOne({ phone });
+    if (existingPhoneNumber) {
+      return res.status(409).json({ success: false, message: 'Phone number already exists' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       firstName,
       lastName,
       username,
-      phone,
-      password: hashedPassword, // Save hashed password
+      phone: phone || null,
+      password: hashedPassword,
     });
+
     await newUser.save();
 
-    res
-      .status(201)
-      .json({ success: true, message: 'User registered successfully' });
+    res.status(201).json({ success: true, message: 'User registered successfully' });
+
   } catch (error) {
-    console.error(`due to : ${error}`);
+    console.error(`Error: ${error}`);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
+
 
 export default {
   getRegister,
