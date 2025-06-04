@@ -25,17 +25,17 @@ const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
+      req.session.UserDetails = {
       firstName,
       lastName,
       username,
       phone: phone || null,
       password: hashedPassword,
-    });
+    };
+    req.session.otpsend = true;
+    
 
-    await newUser.save();
-
-    res.status(201).json({ success: true, message: 'User registered successfully' });
+   return res.status(201).json({ success: true, message: 'User registered successfully' });
 
   } catch (error) {
     console.error(`Error: ${error}`);

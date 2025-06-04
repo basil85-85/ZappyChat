@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ZappyChat - Phone OTP Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: linear-gradient(to right, #667eea, #764ba2);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .card {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .form-control {
+      border-radius: 0.5rem;
+    }
+    #recaptcha-container {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card bg-white">
+    <h4 class="text-center mb-4">📱 ZappyChat OTP Login</h4>
+
+    <div class="mb-3">
+      <label for="phoneNumber" class="form-label">Phone Number</label>
+      <input type="text" id="phoneNumber" class="form-control" placeholder="+91XXXXXXXXXX">
+    </div>
+
+    <div id="recaptcha-container" class="mb-3"></div>
+
+    <div class="d-grid mb-3">
+      <button onclick="sendOTP()" class="btn btn-primary">Send OTP</button>
+    </div>
+
+    <div class="mb-3">
+      <label for="otp" class="form-label">Enter OTP</label>
+      <input type="text" id="otp" class="form-control" placeholder="Enter OTP">
+    </div>
+
+    <div class="d-grid">
+      <button onclick="verifyOTP()" class="btn btn-success">Verify OTP</button>
+    </div>
+
+    <p id="statusMsg" class="text-center mt-3 text-danger fw-bold"></p>
+  </div>
+
+ <script>
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyD62UVxeYLbbFIokNGKOWMViYhC8f7FMnM",
+    authDomain: "chater-9feb8.firebaseapp.com",
+    projectId: "chater-9feb8",
+    storageBucket: "chater-9feb8.appspot.com",
+    messagingSenderId: "862356468631",
+    appId: "1:862356468631:web:3aedb845fa4199c37c0ad2",
+    measurementId: "G-YRFXY5X8B6"
+  };
+  firebase.initializeApp(firebaseConfig);
+
+  // Setup reCAPTCHA (once)
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    'size': 'normal'
+  });
+  
+
+  let confirmationResult;
+
+  function sendOTP() {
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    const appVerifier = window.recaptchaVerifier;
+
+    if (!phoneNumber.startsWith("+")) {
+      document.getElementById('statusMsg').textContent = "❌ Please enter number with country code (+91...)";
+      return;
+    }
+
+    firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+      .then(result => {
+        confirmationResult = result;
+        document.getElementById('statusMsg').textContent = "✅ OTP sent successfully!";
+      })
+      .catch(error => {
+        document.getElementById('statusMsg').textContent = "❌ " + error.message;
+      });
+  }
+
+  function verifyOTP() {
+    const code = document.getElementById('otp').value;
+    confirmationResult.confirm(code)
+      .then(result => {
+        const user = result.user;
+        document.getElementById('statusMsg').textContent = "✅ Phone Verified: " + user.phoneNumber;
+
+        // Send data to backend
+        fetch('/save-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: user.phoneNumber,
+            uid: user.uid
+          })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              document.getElementById('statusMsg').textContent += " | User data saved!";
+              setTimeout(()=>{
+                window.location.href ="/home"
+              },1000)
+            } else {
+              document.getElementById('statusMsg').textContent += " | Failed to save user data";
+            }
+          })
+          .catch(err => {
+            document.getElementById('statusMsg').textContent += " | Error sending data to server";
+          });
+      })
+      .catch(error => {
+        document.getElementById('statusMsg').textContent = "❌ Invalid OTP. Try again.";
+      });
+  }
+</script>
+
+
+</body>
+</html>
