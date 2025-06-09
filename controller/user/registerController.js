@@ -11,8 +11,9 @@ const getRegister = async (req, res) => {
 
 const register = async (req, res) => {
   try {
-    const { firstName, lastName, username, password, phone } = req.body;
     console.log(req.body);
+    const { firstName, lastName, username, password, email } = req.body;
+    
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {

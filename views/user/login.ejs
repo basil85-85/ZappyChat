@@ -431,13 +431,13 @@
       </div>
 
       <form id="loginForm">
-        <div class="form-group">
-          <label class="form-label" for="email">Email or Username</label>
+       <div class="form-group">
+          <label class="form-label" for="loginInput">Phone Number or Username</label>
           <input
-            type="email"
-            id="email"
+            type="text"
+            id="loginInput"
             class="form-input"
-            placeholder="Enter your email or username"
+            placeholder="Enter your phone number or username"
             required
           />
         </div>
@@ -485,146 +485,217 @@
     </div>
 
     <script>
-      const loginForm = document.getElementById('loginForm');
-      const loginButton = document.getElementById('loginButton');
-      const spinner = document.getElementById('spinner');
-      const buttonText = document.getElementById('buttonText');
-      const passwordToggle = document.getElementById('passwordToggle');
-      const passwordInput = document.getElementById('password');
-      const successMessage = document.getElementById('successMessage');
-      const errorMessage = document.getElementById('errorMessage');
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const spinner = document.getElementById('spinner');
+    const buttonText = document.getElementById('buttonText');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const passwordInput = document.getElementById('password');
+    const successMessage = document.getElementById('successMessage') || document.createElement('div');
+    const errorMessage = document.getElementById('errorMessage') || document.createElement('div');
 
-      // Password visibility toggle
-      passwordToggle.addEventListener('click', () => {
-        const type =
-          passwordInput.getAttribute('type') === 'password'
-            ? 'text'
-            : 'password';
-        passwordInput.setAttribute('type', type);
-        passwordToggle.textContent = type === 'password' ? '👁️' : '🙈';
-      });
+    const hints = {
+      lengthHint: password => password.length >= 8,
+      uppercaseHint: password => /[A-Z]/.test(password),
+      numberHint: password => /\d/.test(password),
+      specialHint: password => /[^A-Za-z0-9]/.test(password)
+    };
 
-      // Form validation
-      function validateForm() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
+    // Password toggle 👁️/🙈
+    passwordToggle.addEventListener('click', () => {
+      const type = passwordInput.type === 'password' ? 'text' : 'password';
+      passwordInput.type = type;
+      passwordToggle.textContent = type === 'password' ? '👁️' : '🙈';
+    });
 
-        return email.length > 0 && password.length >= 6;
-      }
+    // Validate password
+    function validateForm() {
+      const usernameOrPhone = document.getElementById('loginInput').value;
+      const password = document.getElementById('password').value;
 
-      // Show loading state
-      function showLoading() {
-        loginButton.classList.add('loading');
-        spinner.style.display = 'inline-block';
-        buttonText.textContent = 'Logging in...';
-        loginButton.disabled = true;
-      }
+      const results = {
+        length: hints.lengthHint(password),
+        uppercase: hints.uppercaseHint(password),
+        number: hints.numberHint(password),
+        special: hints.specialHint(password)
+      };
 
-      // Hide loading state
-      function hideLoading() {
-        loginButton.classList.remove('loading');
-        spinner.style.display = 'none';
-        buttonText.textContent = 'Login to ZappyChat';
-        loginButton.disabled = false;
-      }
-
-      // Show success message
-      function showSuccess() {
-        errorMessage.style.display = 'none';
-        successMessage.style.display = 'block';
-
-        setTimeout(() => {
-          // Simulate redirect to main chat
-          window.location.href = '#dashboard';
-        }, 2000);
-      }
-
-      // Show error message
-      function showError() {
-        successMessage.style.display = 'none';
-        errorMessage.style.display = 'block';
-
-        setTimeout(() => {
-          errorMessage.style.display = 'none';
-        }, 3000);
-      }
-
-      // Handle form submission
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-          showError();
-          return;
-        }
-
-        showLoading();
-
-        // Simulate API call
-        setTimeout(() => {
-          hideLoading();
-
-          // Demo: Show success for any valid email/password combo
-          const email = document.getElementById('email').value;
-          if (email.includes('@') || email.length > 3) {
-            showSuccess();
-          } else {
-            showError();
-          }
-        }, 2000);
-      });
-
-      // Social login handlers
-      function socialLogin(provider) {
-        showLoading();
-
-        setTimeout(() => {
-          hideLoading();
-          showSuccess();
-        }, 1500);
-      }
-
-      function showForgotPassword() {
-        alert(
-          'Forgot Password feature coming soon! ⚡\n\nFor now, try any email with a password of 6+ characters to demo the login.'
-        );
-      }
-
-      function showSignup() {
-        alert(
-          'Sign up feature coming soon! ⚡\n\nFor now, you can demo the login with any email and password combination.'
-        );
-      }
-
-      // Real-time validation feedback
-      document.getElementById('email').addEventListener('input', (e) => {
-        const input = e.target;
-        if (input.value.includes('@') || input.value.length > 3) {
-          input.style.borderColor = '#4ade80';
-        } else {
-          input.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        }
-      });
-
-      document.getElementById('password').addEventListener('input', (e) => {
-        const input = e.target;
-        if (input.value.length >= 6) {
-          input.style.borderColor = '#4ade80';
-        } else {
-          input.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        }
-      });
-
-      // Demo helper
-      setTimeout(() => {
-        console.log(
-          '💡 Demo tip: Use any email format and password with 6+ characters to test the login flow!'
-        );
-      }, 3000);
-
-      function showSignup(){
-    window.location.href = "/signup";
+      const isValid = Object.values(results).every(Boolean);
+      return isValid;
     }
+
+    // Loading states
+    function showLoading() {
+      loginButton.classList.add('loading');
+      spinner.style.display = 'inline-block';
+      buttonText.textContent = 'Logging in...';
+      loginButton.disabled = true;
+    }
+
+    function hideLoading() {
+      loginButton.classList.remove('loading');
+      spinner.style.display = 'none';
+      buttonText.textContent = 'Login to ZappyChat';
+      loginButton.disabled = false;
+    }
+
+    // Show success/error
+    function showSuccess() {
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'block';
+      successMessage.textContent = "✅ Login successful!";
+      setTimeout(() => {
+        window.location.href = '#dashboard';
+      }, 2000);
+    }
+
+    function showError() {
+      successMessage.style.display = 'none';
+      errorMessage.style.display = 'block';
+      errorMessage.textContent = "❌ Invalid login or password.";
+      setTimeout(() => {
+        errorMessage.style.display = 'none';
+      }, 3000);
+    }
+
+    // Form submit
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!validateForm()) {
+        showError();
+        return;
+      }
+
+      showLoading();
+      const fromdata = { 
+        usernamephone : document.getElementById("loginInput").value,
+        password : document.getElementById("password").value
+      }
+
+     backend(fromdata)
+    });
+
+    // Real-time password border feedback
+    passwordInput.addEventListener('input', (e) => {
+      const value = e.target.value;
+      e.target.style.borderColor = value.length >= 6 ? '#4ade80' : 'rgba(255, 255, 255, 0.2)';
+    });
+
+    // Navigation
+    function showSignup() {
+      window.location.href = "/signup";
+    }
+
+    function showForgotPassword() {
+      alert("Forgot password feature coming soon!");
+    }
+   
+
+async function backend(params) {
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    });
+      hideLoading();
+    const data = await response.json();
+
+    if (!response.ok) {
+    showErrorNotification(data.message || 'Something went wrong')
+    }
+    if(data.success){
+      showSuccessNotification(data.message );
+      setTimeout(()=>{
+        window.location.href= "/home"
+      },1000)
+    }else{
+      showErrorNotification(data.message)
+    }
+    
+
+  } catch (error) {
+    showErrorNotification('❌ ' + error.message);
+  }
+}
+
+
+
+
+
+ function showErrorNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #dc3545;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <span class="error-icon">⚠️</span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+function showSuccessNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #28a745;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <span class="success-checkmark">✓</span>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
     </script>
   </body>
 </html>
